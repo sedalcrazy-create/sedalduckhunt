@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: duckhunt_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-duckhunt}
+      POSTGRES_USER: ${POSTGRES_USER:-duckhunt_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-DuckHunt2025!}
+    volumes:
+      - duckhunt_postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - duckhunt_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-duckhunt_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: duckhunt_app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3002}:3002"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3002
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-duckhunt}
+      - POSTGRES_USER=${POSTGRES_USER:-duckhunt_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-DuckHunt2025!}
+      - GAME_DURATION=${GAME_DURATION:-120}
+      - MAX_GAMES_PER_USER=${MAX_GAMES_PER_USER:-3}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - duckhunt_network
+
+  bot:
+    build: ./bot
+    container_name: duckhunt_bot
+    restart: unless-stopped
+    environment:
+      - BALE_BOT_TOKEN=${BALE_BOT_TOKEN:-672687492:eFf57XXkjixcslJDuAB38vAc98wZ5qxO7Uk}
+      - GAME_URL=${GAME_URL:-https://duck.darmanjoo.ir}
+      - API_URL=http://app:3002
+      - CHANNEL_ID=${CHANNEL_ID:-@refah014}
+    depends_on:
+      - app
+    networks:
+      - duckhunt_network
+
+volumes:
+  duckhunt_postgres_data:
+    driver: local
+
+networks:
+  duckhunt_network:
+    driver: bridge
+    name: duckhunt_isolated_network
