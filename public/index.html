@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>چالش شکار اردک - اداره کل رفاه و درمان</title>
+
+    <!-- Bale Mini App SDK -->
+    <script src="https://tapi.bale.ai/miniapp.js?3"></script>
+
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a5f2a 0%, #0d3d17 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #a8d5a2;
+            font-size: 16px;
+        }
+
+        /* Container */
+        .container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #1a5f2a;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #1a5f2a);
+            color: #fff;
+        }
+
+        /* Rules */
+        .rules-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .rules-box h3 {
+            color: #1a5f2a;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .rules-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .rules-box li {
+            padding: 8px 0;
+            color: #555;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .rules-box li:last-child {
+            border-bottom: none;
+        }
+
+        .rules-box li::before {
+            content: "🎯 ";
+        }
+
+        /* Game Container */
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #000;
+            z-index: 100;
+        }
+
+        #game-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .stat-item {
+            text-align: center;
+            color: #fff;
+        }
+
+        .stat-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f39c12;
+        }
+
+        .stat-item .label {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        /* Timer */
+        .timer {
+            font-size: 48px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .timer.warning {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            width: 100%;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .leaderboard-item.top-3 {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+        }
+
+        .rank {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a5f2a;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+
+        .rank.gold { background: #f39c12; }
+        .rank.silver { background: #95a5a6; }
+        .rank.bronze { background: #d35400; }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .player-score {
+            color: #1a5f2a;
+            font-weight: bold;
+        }
+
+        /* Games Remaining */
+        .games-remaining {
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .games-remaining.exhausted {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #ddd;
+            border-top-color: #1a5f2a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Message */
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* User Info */
+        .user-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .user-info .name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen active">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p style="color: #fff;">در حال بارگذاری...</p>
+        </div>
+    </div>
+
+    <!-- Registration Screen -->
+    <div id="register-screen" class="screen">
+        <div class="header">
+            <h1>🦆 چالش شکار اردک</h1>
+            <p>اداره کل رفاه و درمان</p>
+        </div>
+        <div class="container">
+            <form id="register-form">
+                <div class="form-group">
+                    <label>نام</label>
+                    <input type="text" id="firstName" required placeholder="نام خود را وارد کنید">
+                </div>
+                <div class="form-group">
+                    <label>نام خانوادگی</label>
+                    <input type="text" id="lastName" required placeholder="نام خانوادگی خود را وارد کنید">
+                </div>
+                <div class="form-group">
+                    <label>شماره پرسنلی</label>
+                    <input type="text" id="employeeCode" required placeholder="شماره پرسنلی خود را وارد کنید">
+                </div>
+                <button type="submit" class="btn btn-primary">ثبت‌نام و شروع بازی</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rules Screen -->
+    <div id="rules-screen" class="screen">
+        <div class="header">
+            <h1>🦆 چالش شکار اردک</h1>
+            <p>اداره کل رفاه و درمان</p>
+        </div>
+        <div class="container">
+            <div class="user-info" style="color: #333; margin-bottom: 20px;">
+                <span class="name" id="player-name"></span>
+            </div>
+            <div class="games-remaining" id="games-remaining">
+                <span id="games-text"></span>
+            </div>
+            <div class="rules-box">
+                <h3>قوانین بازی</h3>
+                <ul>
+                    <li>مدت بازی: ۲ دقیقه</li>
+                    <li>روی اردک‌ها کلیک کنید تا شکار شوند</li>
+                    <li>هر اردک امتیاز متفاوتی دارد</li>
+                    <li>دقت بالاتر = امتیاز بیشتر</li>
+                    <li>هر کاربر فقط ۳ بار می‌تواند بازی کند</li>
+                </ul>
+            </div>
+            <button id="start-game-btn" class="btn btn-success">شروع بازی 🎮</button>
+            <button id="view-leaderboard-btn" class="btn btn-primary" style="margin-top: 10px;">مشاهده جدول امتیازات 🏆</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div id="game-container">
+            <iframe id="game-iframe" src="" allow="autoplay; fullscreen"></iframe>
+        </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+        <div class="header">
+            <h1>🎉 بازی تمام شد!</h1>
+        </div>
+        <div class="container">
+            <div class="message success" id="result-message">
+                <h2>امتیاز شما: <span id="final-score">0</span></h2>
+                <p>اردک شکار شده: <span id="final-ducks">0</span></p>
+                <p>دقت: <span id="final-accuracy">0%</span></p>
+            </div>
+            <div class="games-remaining" id="games-remaining-result"></div>
+            <button id="play-again-btn" class="btn btn-success">بازی مجدد 🔄</button>
+            <button id="result-leaderboard-btn" class="btn btn-primary" style="margin-top: 10px;">جدول امتیازات 🏆</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div id="leaderboard-screen" class="screen">
+        <div class="header">
+            <h1>🏆 جدول امتیازات</h1>
+            <p>۱۰ بازیکن برتر</p>
+        </div>
+        <div class="container">
+            <div class="leaderboard" id="leaderboard-list"></div>
+            <button id="back-btn" class="btn btn-primary" style="margin-top: 20px;">بازگشت</button>
+        </div>
+    </div>
+
+    <!-- Game Limit Screen -->
+    <div id="limit-screen" class="screen">
+        <div class="header">
+            <h1>⚠️ محدودیت بازی</h1>
+        </div>
+        <div class="container">
+            <div class="message error">
+                <p>شما ۳ بار بازی کرده‌اید و امکان بازی مجدد ندارید.</p>
+            </div>
+            <button id="limit-leaderboard-btn" class="btn btn-primary">مشاهده جدول امتیازات 🏆</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let socket;
+        let baleUserId = null;
+        let userData = null;
+        let gameActive = false;
+        let gameStartTime = null;
+        let gameStats = {
+            score: 0,
+            ducksShot: 0,
+            shotsFired: 0,
+            levelReached: 1,
+            accuracy: 0
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOMContentLoaded - starting initialization');
+
+            // Timeout to show registration if initialization takes too long
+            const initTimeout = setTimeout(() => {
+                console.log('Init timeout - showing register screen');
+                if (!baleUserId) {
+                    baleUserId = 'test_user_' + Date.now();
+                }
+                if (!socket || !socket.connected) {
+                    connectSocket();
+                }
+            }, 3000);
+
+            try {
+                // Initialize Bale Mini App with timeout
+                if (window.Bale && window.Bale.WebApp) {
+                    console.log('Bale SDK found, initializing...');
+                    try {
+                        // Try to get user data directly first
+                        const initData = Bale.WebApp.initDataUnsafe;
+                        console.log('Bale initData:', initData);
+                        if (initData && initData.user) {
+                            baleUserId = initData.user.id.toString();
+                            console.log('Got Bale user ID:', baleUserId);
+                        }
+
+                        // Call ready() but don't wait forever
+                        Bale.WebApp.ready();
+                    } catch (baleError) {
+                        console.error('Bale SDK error:', baleError);
+                    }
+                } else {
+                    console.log('Bale SDK not found');
+                }
+
+                // Fallback for testing or if Bale fails
+                if (!baleUserId) {
+                    baleUserId = 'test_user_' + Date.now();
+                    console.log('Using fallback user ID:', baleUserId);
+                }
+
+                clearTimeout(initTimeout);
+                connectSocket();
+
+                // Listen for game messages from iframe
+                window.addEventListener('message', handleGameMessage);
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                clearTimeout(initTimeout);
+                if (!baleUserId) {
+                    baleUserId = 'test_user_' + Date.now();
+                }
+                connectSocket();
+            }
+        });
+
+        // Connect to socket server
+        function connectSocket() {
+            console.log('Connecting to socket...');
+            socket = io({
+                transports: ['websocket', 'polling'],
+                timeout: 10000
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                checkUser();
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('Socket connection error:', error);
+                // Show registration anyway
+                showScreen('register-screen');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+
+            // If socket doesn't connect in 5 seconds, show register screen
+            setTimeout(() => {
+                if (!socket.connected) {
+                    console.log('Socket connection timeout');
+                    showScreen('register-screen');
+                }
+            }, 5000);
+        }
+
+        // Handle messages from game iframe
+        function handleGameMessage(event) {
+            const data = event.data;
+            if (!data || !data.type) return;
+
+            console.log('Game message:', data);
+
+            switch (data.type) {
+                case 'scoreUpdate':
+                    gameStats.score = data.score || 0;
+                    gameStats.ducksShot = data.ducksShot || 0;
+                    gameStats.shotsFired = data.shotsFired || 0;
+                    gameStats.levelReached = data.levelReached || 1;
+                    break;
+
+                case 'gameEnd':
+                    if (gameActive) {
+                        gameStats.score = data.score || 0;
+                        gameStats.ducksShot = data.ducksShot || 0;
+                        gameStats.accuracy = data.accuracy || 0;
+                        gameStats.levelReached = data.levelReached || 1;
+                        endGame();
+                    }
+                    break;
+
+                case 'replayRequested':
+                    // User clicked replay in the game
+                    if (userData) {
+                        checkGameLimit();
+                    }
+                    break;
+            }
+        }
+
+        // Check if user is registered
+        function checkUser() {
+            console.log('Checking user:', baleUserId);
+
+            // Timeout in case callback never fires
+            const timeout = setTimeout(() => {
+                console.log('checkUser timeout - showing register screen');
+                showScreen('register-screen');
+            }, 5000);
+
+            socket.emit('join game', { baleUserId }, (response) => {
+                clearTimeout(timeout);
+                console.log('join game response:', response);
+
+                if (!response) {
+                    showScreen('register-screen');
+                    return;
+                }
+
+                if (response.needsRegistration) {
+                    showScreen('register-screen');
+                } else if (response.user) {
+                    userData = response.user;
+                    checkGameLimit();
+                } else {
+                    showScreen('register-screen');
+                }
+            });
+        }
+
+        // Check game limit
+        function checkGameLimit() {
+            console.log('Checking game limit for user:', baleUserId);
+
+            // Timeout in case callback never fires
+            const timeout = setTimeout(() => {
+                console.log('checkGameLimit timeout - showing rules screen');
+                if (userData) {
+                    document.getElementById('player-name').textContent =
+                        `${userData.firstName || userData.first_name || ''} ${userData.lastName || userData.last_name || ''}`;
+                    document.getElementById('games-text').textContent = 'بازی‌های باقیمانده: 3 از 3';
+                    showScreen('rules-screen');
+                } else {
+                    showScreen('register-screen');
+                }
+            }, 5000);
+
+            socket.emit('check-game-limit', { baleUserId }, (response) => {
+                clearTimeout(timeout);
+                console.log('check-game-limit response:', response);
+
+                if (!response) {
+                    showScreen('register-screen');
+                    return;
+                }
+
+                if (response.error) {
+                    console.error(response.error);
+                    showScreen('register-screen');
+                    return;
+                }
+
+                const gamesPlayed = response.gamesPlayed || 0;
+                const maxGames = response.maxGames || 3;
+                const remaining = maxGames - gamesPlayed;
+
+                document.getElementById('player-name').textContent =
+                    `${userData.firstName || userData.first_name} ${userData.lastName || userData.last_name}`;
+
+                const gamesDiv = document.getElementById('games-remaining');
+                const startBtn = document.getElementById('start-game-btn');
+
+                if (remaining > 0) {
+                    gamesDiv.className = 'games-remaining';
+                    document.getElementById('games-text').textContent = `بازی‌های باقیمانده: ${remaining} از ${maxGames}`;
+                    startBtn.style.display = 'block';
+                    showScreen('rules-screen');
+                } else {
+                    // No games remaining - show limit screen
+                    showScreen('limit-screen');
+                }
+            });
+        }
+
+        // Registration form
+        document.getElementById('register-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const data = {
+                baleUserId,
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                employeeCode: document.getElementById('employeeCode').value.trim(),
+                phoneNumber: ''
+            };
+
+            socket.emit('register user', data, (response) => {
+                if (response.success) {
+                    userData = {
+                        id: response.user.id,
+                        firstName: response.user.first_name,
+                        lastName: response.user.last_name
+                    };
+                    checkGameLimit();
+                } else {
+                    alert('خطا در ثبت‌نام: ' + response.error);
+                }
+            });
+        });
+
+        // Start game button
+        document.getElementById('start-game-btn').addEventListener('click', startGame);
+        document.getElementById('play-again-btn').addEventListener('click', () => {
+            checkGameLimit();
+        });
+
+        // Leaderboard buttons
+        document.getElementById('view-leaderboard-btn').addEventListener('click', showLeaderboard);
+        document.getElementById('result-leaderboard-btn').addEventListener('click', showLeaderboard);
+        document.getElementById('limit-leaderboard-btn').addEventListener('click', showLeaderboard);
+        document.getElementById('back-btn').addEventListener('click', () => {
+            if (userData) {
+                checkGameLimit();
+            } else {
+                showScreen('register-screen');
+            }
+        });
+
+        // Start game
+        function startGame() {
+            showScreen('game-screen');
+            gameActive = true;
+            gameStartTime = Date.now();
+            gameStats = { score: 0, ducksShot: 0, shotsFired: 0, levelReached: 1, accuracy: 0 };
+
+            // Load game in iframe
+            const iframe = document.getElementById('game-iframe');
+            iframe.src = '/game.html?challenge=true&t=' + Date.now();
+        }
+
+        // End game
+        function endGame() {
+            gameActive = false;
+
+            // Hide game iframe
+            const iframe = document.getElementById('game-iframe');
+            iframe.src = '';
+
+            const gameDuration = Math.round((Date.now() - gameStartTime) / 1000);
+
+            // Save score
+            socket.emit('save-score', {
+                baleUserId,
+                score: gameStats.score,
+                ducksShot: gameStats.ducksShot,
+                accuracy: gameStats.accuracy,
+                gameDuration,
+                levelReached: gameStats.levelReached
+            }, (response) => {
+                document.getElementById('final-score').textContent = gameStats.score;
+                document.getElementById('final-ducks').textContent = gameStats.ducksShot;
+                document.getElementById('final-accuracy').textContent = gameStats.accuracy + '%';
+
+                if (response.success) {
+                    const remaining = response.maxGames - response.gamesPlayed;
+                    const gamesDiv = document.getElementById('games-remaining-result');
+
+                    if (remaining > 0) {
+                        gamesDiv.className = 'games-remaining';
+                        gamesDiv.textContent = `بازی‌های باقیمانده: ${remaining} از ${response.maxGames}`;
+                        document.getElementById('play-again-btn').style.display = 'block';
+                    } else {
+                        gamesDiv.className = 'games-remaining exhausted';
+                        gamesDiv.textContent = 'شما تمام بازی‌های خود را انجام داده‌اید';
+                        document.getElementById('play-again-btn').style.display = 'none';
+                    }
+                }
+
+                showScreen('result-screen');
+            });
+        }
+
+        // Show leaderboard
+        function showLeaderboard() {
+            socket.emit('request leaderboard', (response) => {
+                if (response.success) {
+                    const list = document.getElementById('leaderboard-list');
+                    list.innerHTML = '';
+
+                    if (response.leaderboard.length === 0) {
+                        list.innerHTML = '<p style="text-align: center; color: #666;">هنوز کسی بازی نکرده!</p>';
+                    } else {
+                        response.leaderboard.forEach((player, index) => {
+                            const item = document.createElement('div');
+                            item.className = 'leaderboard-item' + (index < 3 ? ' top-3' : '');
+
+                            let rankClass = '';
+                            if (index === 0) rankClass = 'gold';
+                            else if (index === 1) rankClass = 'silver';
+                            else if (index === 2) rankClass = 'bronze';
+
+                            item.innerHTML = `
+                                <div class="rank ${rankClass}">${index + 1}</div>
+                                <div class="player-info">
+                                    <div class="player-name">${player.first_name} ${player.last_name}</div>
+                                    <div class="player-score">${player.high_score} امتیاز - ${player.max_ducks} اردک</div>
+                                </div>
+                            `;
+                            list.appendChild(item);
+                        });
+                    }
+
+                    showScreen('leaderboard-screen');
+                }
+            });
+        }
+
+        // Show screen
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+    </script>
+</body>
+</html>

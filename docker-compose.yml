@@ -35,7 +35,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-duckhunt_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-DuckHunt2025!}
       - GAME_DURATION=${GAME_DURATION:-120}
-      - MAX_GAMES_PER_USER=${MAX_GAMES_PER_USER:-999999}
+      - MAX_GAMES_PER_USER=${MAX_GAMES_PER_USER:-3}
     depends_on:
       postgres:
         condition: service_healthy
