@@ -24,6 +24,7 @@ const MAX_GAMES_PER_USER = parseInt(process.env.MAX_GAMES_PER_USER) || 3;
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/dist', express.static(path.join(__dirname, 'dist')));
 
 // No-cache headers for game assets
 app.use((req, res, next) => {
