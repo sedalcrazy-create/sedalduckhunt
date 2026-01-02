@@ -719,9 +719,9 @@
             gameStartTime = Date.now();
             gameStats = { score: 0, ducksShot: 0, shotsFired: 0, levelReached: 1, accuracy: 0 };
 
-            // Load game in iframe - 10 waves, no time limit, challenge mode OFF
+            // Load game in iframe - challenge mode ON (for hard levels), timer set to 99999s
             const iframe = document.getElementById('game-iframe');
-            iframe.src = '/game.html?challenge=false&waves=10&ducks=2&bullets=3&t=' + Date.now();
+            iframe.src = '/game.html?challenge=true&t=' + Date.now();
         }
 
         // End game
