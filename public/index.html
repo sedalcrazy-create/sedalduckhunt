@@ -383,10 +383,10 @@
             <div class="rules-box">
                 <h3>قوانین بازی</h3>
                 <ul>
-                    <li>مدت بازی: ۲ دقیقه</li>
+                    <li>تعداد دست: ۱۰ دست</li>
                     <li>روی اردک‌ها کلیک کنید تا شکار شوند</li>
-                    <li>هر اردک امتیاز متفاوتی دارد</li>
-                    <li>دقت بالاتر = امتیاز بیشتر</li>
+                    <li>هر دست ۳ گلوله دارید</li>
+                    <li>بعد از ۱۰ دست بازی تمام می‌شود</li>
                     <li>هر کاربر فقط ۳ بار می‌تواند بازی کند</li>
                 </ul>
             </div>
@@ -719,9 +719,9 @@
             gameStartTime = Date.now();
             gameStats = { score: 0, ducksShot: 0, shotsFired: 0, levelReached: 1, accuracy: 0 };
 
-            // Load game in iframe
+            // Load game in iframe - 10 waves, no time limit
             const iframe = document.getElementById('game-iframe');
-            iframe.src = '/game.html?challenge=true&t=' + Date.now();
+            iframe.src = '/game.html?waves=10&ducks=2&bullets=3&time=9999&t=' + Date.now();
         }
 
         // End game

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rsync:*)",
+      "Bash(scp:*)",
+      "Bash(mkdir:*)",
+      "Bash(git fetch:*)",
+      "Bash(ssh root@37.152.174.87 \"ls -la /opt/duckhunt/\")",
+      "Bash(ssh root@37.152.174.87 \"cd /opt/duckhunt && git status\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
